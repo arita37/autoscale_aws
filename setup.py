@@ -37,7 +37,7 @@ setup(
     python_requires='>=3.0',
     entry_points={
         'console_scripts': [
-            'autoscale = autoscale.batch_daemon_autoscale_cli:autoscale_main'
+            'autoscale = autoscale_aws.batch_daemon_autoscale_cli:autoscale_main'
         ]
     }
 )
