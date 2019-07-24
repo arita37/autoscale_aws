@@ -62,9 +62,9 @@ import re
 import warnings
 from datetime import datetime
 from time import sleep
-from autoscale import util_log
-from autoscale.util_log import logger_setup
-from autoscale.util_aws import os_system, json_from_file, tofloat,\
+from autoscale_aws import util_log
+from autoscale_aws.util_log import logger_setup
+from autoscale_aws.util_aws import os_system, json_from_file, tofloat,\
     ssh_cmdrun, get_host_public_ipaddress
 
 warnings.filterwarnings(action="ignore", module=".*paramiko.*")
