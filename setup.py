@@ -17,7 +17,7 @@ LONG_DESCRIPTION = """
 setup(
     name='autoscaleaws',
     version='0.0.1',
-    description='Auto scale AWS by spot instances.",
+    description='Auto scale AWS by spot instances.',
     long_description=LONG_DESCRIPTION,
     license = "BSD",
     # The project's main homepage.
