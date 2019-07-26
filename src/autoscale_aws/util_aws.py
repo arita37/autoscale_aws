@@ -169,6 +169,13 @@ def exists_file(fname):
     return False
 
 
+def exists_dir(dirname):
+    """Check if this path exists and is a directory"""
+    if dirname and os.path.exists(dirname) and os.path.isdir(dirname):
+        return True
+    return False
+
+
 def json_from_file(jsonfile, defval=None):
     """ Get json data from the file."""
     jsondata = defval

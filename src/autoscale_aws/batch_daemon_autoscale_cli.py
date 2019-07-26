@@ -59,13 +59,14 @@ import json
 import csv
 import os
 import re
+import sys
 import warnings
 from datetime import datetime
 from time import sleep
 from autoscale_aws import util_log
 from autoscale_aws.util_log import logger_setup
 from autoscale_aws.util_aws import os_system, json_from_file, tofloat,\
-    ssh_cmdrun, get_host_public_ipaddress
+    ssh_cmdrun, get_host_public_ipaddress, exists_file, exists_dir
 
 warnings.filterwarnings(action="ignore", module=".*paramiko.*")
 
@@ -662,7 +663,8 @@ def load_arguments():
     """
      Load CLI input, load config.toml , overwrite config.toml by CLI Input
     """
-    cur_path = os.path.dirname(os.path.realpath(__file__))
+    homepath = os.environ["HOME"] if "HOME" in os.environ else "/home/ubuntu"
+    cur_path = '%s/.aws/' % homepath
     config_file = os.path.join(cur_path, "config.toml")
 
     p = argparse.ArgumentParser()
@@ -693,11 +695,20 @@ def load_arguments():
         def __init__(self, adict):
             self.__dict__.update(adict)
 
-    print(arg.param_file)
+    if not exists_file(arg.param_file):
+        print('Config file: %s does not exist, exiting...' % arg.param_file)
+        sys.exit(1)
+    print('Using config file: %s' % arg.param_file)
+    if not exists_dir(arg.task_folder):
+        # try and catch block for errors and bail out
+        os.makedirs(arg.task_folder)
+    print('Using task folder: %s' % arg.task_folder)
+
     pars = toml.load(arg.param_file)
+
     # print(arg.param_file, pars)
     pars = pars[arg.param_mode]  # test / prod
-    print(arg.param_file, pars)
+    # print(arg.param_file, pars)
 
     ### Overwrite params by CLI input and merge with toml file
     for key, x in vars(arg).items():
@@ -719,6 +730,9 @@ def autoscale_main():
     ### Variable initialization #####################################################
     arg = load_arguments()
     # ISTEST = not arg.prod
+    if not exists_dir(os.path.dirname(arg.log_file)):
+        # try and catch block for errors and bail out
+        os.makedirs(os.path.dirname(arg.log_file))
     logger = logger_setup(__name__, log_file=arg.log_file, formatter=util_log.FORMATTER_4,
                           isrotate=True)
     # print("arg input", arg)
@@ -795,98 +809,3 @@ def autoscale_main():
 ###################################################################################
 if __name__ == "__main__":
     autoscale_main()
-
-
-
-# cur_path = os.path.dirname(os.path.realpath(__file__))
-# config_file = os.path.join(cur_path, "config.toml")
-
-
-# TASK_FOLDER_DEFAULT = os.path.dirname(os.path.realpath(__file__)) + "/ztest/tasks/"
-# TASK_FOLDER_DEFAULT =  "/home/ubuntu/ztest/tasks/"
-
-# keypair = "aws_ec2_ajey"  # Remote Spot Instance
-# region = "us-west-2"  # Oregon West
-# default_instance_type = "t3.small"
-# amiId = "ami-090b189f0e2ffe4df"  # "ami-0d16a0996debff8d4"  #'ami-0491a657e7ed60af7'
-# spot_cfg_file = "/tmp/ec_spot_config"
-
-
-# HOME = os.environ["HOME"] if "HOME" in os.environ else "/home/ubuntu"
-
-### Record the running/done tasks on S3 DRIVE, Global File system  #############
-# global_task_file_default = "%s/zs3drive/ztest_global_task.json" % ( HOME)
-
-
-
-"""
-if not ISTEST :
-  ### Global Shared Drive
-  TASK_S3_FOLDER    = "/home/ubuntu/zs3drive/tasks/"
-  BACKUP_S3_FOLDER  = "/home/ubuntu/zs3drive/backup/"
-  TASKOUT_S3_FOLDER = "/home/ubuntu/zs3drive/tasks_out/"
-  ### Local to each instance
-  TASKOUT_REPOURL      = "https://github.com/arita37/tasks_out.git"
-  TASKOUT_LOCAL_FOLDER = "/home/ubuntu/data/github_tasks_out/"
-  TASK_REPOURL      = "https://github.com/arita37/tasks.git"
-  TASK_LOCAL_FOLDER = "/home/ubuntu/data/github_tasks/"
-  FOLDER_TO_BACKUP  = ["/home/ubuntu/zlog/", "/home/ubuntu/tasks_out/" ]
-  ### Record the running/done tasks on S3 DRIVE, Global File system  #############
-  global_task_file = "%s/zs3drive/global_task.json" % (os.environ['HOME'] 
-                     if 'HOME' in os.environ else '/home/ubuntu')
-else  :
-  ### Global Shared Drive
-  TASK_S3_FOLDER    = "/home/ubuntu/zs3drive/ztest_tasks/"
-  BACKUP_S3_FOLDER  = "/home/ubuntu/zs3drive/ztest_backup/"
-  TASKOUT_S3_FOLDER = "/home/ubuntu/zs3drive/ztest_tasks_out/"
-  ### Local to each instance
-  TASKOUT_REPOURL      = "https://github.com/arita37/tasks_out.git"
-  TASKOUT_LOCAL_FOLDER = "/home/ubuntu/data/ztest_github_tasks_out/"
-  TASK_REPOURL      = "https://github.com/arita37/tasks.git"
-  TASK_LOCAL_FOLDER = "/home/ubuntu/data/ztest_github_tasks/"
-  FOLDER_TO_BACKUP  = ["/home/ubuntu/zlog/", "/home/ubuntu/tasks_out/" ]
-"""
-
-
-"""
-Problem o blocking
-          cmds = "chmod 777  /home/ubuntu/zbatch_ssh.sh &&  screen -d -m  bash /home/ubuntu/zbatch_ssh.sh"
-          cmds = "bash /home/ubuntu/zs3drive/zbatch_cleanup.sh && which python && whoami &&  nohup bash /home/ubuntu/zs3drive/zbatch.sh </dev/null >/dev/null 2>&1 & "   
-            f.write(cmds)     
-            
-            
-Found this on google groups: Starting a daemon with ssh - comp.unix.admin | Google Groups
-ssh server 'program </dev/null >/dev/null 2>&1 &' 
-that redirects the stdin to /dev/null, the stdout to /dev/null, and the stderr to stdout
-This worked for me so that the remote execution kicked off the daemon and didn't wait around for output.
-Will
-           1)   SSH command is time blocked....
-           
-           https://github.com/paramiko/paramiko/issues/501
-           
-           set
-get_pty = False
-and use
-nohup /tmp/b.sh >> /tmp/a.log 2>>/tmp/a.log &
-           whic
-       
-           2) Issues with SH shell vs Bash Shell when doing SSH
-               need to load bashrc manually
-           #  cmdstr="nohup  /home/ubuntu/zbatch.sh  2>&1 | tee -a /home/ubuntu/zlog/zbatch_log.log")
-           cmds = "bash /home/ubuntu/zbatch_cleanup.sh && which python && whoami &&  bash /home/ubuntu/zs3drive/zbatch.sh "
-           ssh user@host "nohup command1 > /dev/null 2>&1 &; nohup command2; command3"
-           ssh ubuntu@18.237.190.140 " /home/ubuntu/zbatch_cleanup.sh    && nohup  /home/ubuntu/zbatch.sh   "
-          
-          
-          
-  # Send the command (non-blocking)
-stdin, stdout, stderr = ssh.exec_command("my_long_command --arg 1 --arg 2")
-# Wait for the command to terminate
-while not stdout.channel.exit_status_ready():
-    # Only print data if there is data to read in the channel
-    if stdout.channel.recv_ready():
-        rl, wl, xl = select.select([stdout.channel], [], [], 0.0)
-        if len(rl) > 0:
-            # Print data from stdout
-            print stdout.channel.recv(1024),
-"""
