@@ -1,14 +1,46 @@
 Autoscale AWS using spot instances as per start and stop rules.
 
-You create a folder of tasks.
-Autoscale will pick up those ones and launch AWS instances.
+
+
+```
+Create a folder of tasks.
+   /tasks/mytask01/
+   /tasks/mytask02/
+   /tasks/mytask03/
+
+
+Autoscale will pick up those ones, launch AWS instances,
+copy the folder to remote AWS, and launch main.sh on remote instances.
 and stop them when the tasks are finished.
+
+The results are stored in S3 folders and it can be retrieved
+even the instances are closed on your local PC
+
+
 
 
 
 ```
 
-Install process :
+```
+
+Install process  from pip :
+
+cd yourenv
+pip install autoscale_aws
+
+Configuration is in 
+YOURHOME/.aws/
+
+
+```
+
+
+
+
+```
+
+Install process  from github :
 
 CURDIR=`pwd`
 git clone https://github.com/arita37/autoscale_aws/
@@ -24,4 +56,9 @@ export PYTHONPATH=${CURDIR}/autoscale_aws/src:${PYTHONPATH}
 python src/autoscale_aws/batch_daemon_autoscale_cli.py --help
 
 ```
+
+
+
+
+
 
