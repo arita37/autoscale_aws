@@ -16,15 +16,14 @@ LONG_DESCRIPTION = """
 
 setup(
     name='autoscaleaws',
-    version='0.0.1',
+    version='0.0.2',
     description='Auto scale AWS by spot instances.',
     long_description=LONG_DESCRIPTION,
     license = "BSD",
     # The project's main homepage.
     url='https://github.com/ajeybk/autoscaleaws',
     # Author(s) details
-    author='Yaki Noe/Ajey Khanapuri',
-    author_email='kbajey@gmail.com',
+    author='arita37',
     classifiers=[
         "Development Status :: 3 - Alpha",
         'Topic :: Software Development :: Libraries :: Application Frameworks',
