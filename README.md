@@ -1,5 +1,16 @@
-Autoscale AWS using spot instances as per start and stop rules.
 
+ Autoscale AWS allows to scale up virtual machines by invoking spot requests as per
+ start and stop rules.
+
+
+
+ ```
+ To publish
+cd repo
+python pypi.py  pblish
+
+
+ ```
 
 
 ```
@@ -13,14 +24,14 @@ Autoscale will pick up those ones, launch AWS instances,
 copy the folder to remote AWS, and launch main.sh on remote instances.
 and stop them when the tasks are finished.
 
+
 The results are stored in S3 folders and it can be retrieved
 even the instances are closed on your local PC
 
 
-
-
-
 ```
+
+
 
 ```
 

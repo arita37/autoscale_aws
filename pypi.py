@@ -1,6 +1,10 @@
 # pylint: disable=C0321,C0103,C0301,E1305,E1121,C0302,C0330,C0111,W0613,W0611,R1705
 # -*- coding: utf-8 -*-
 """
+
+python pypi.py 
+
+
 Pypi Uploader
 Usage:
 First of all, you need to copy the script to /usr/bin directory and mark it as an executable, like so:
