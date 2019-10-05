@@ -1,0 +1,14 @@
+
+
+addons:
+  sonarcloud:
+    organization: "arita37"
+    token:
+      secure: "travis encrypt 914eac095162e1ebc7704c63c5fcf1861f7e654e" # encrypted value of your token
+
+script:
+  # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
+  - sonar-scanner
+  
+  
+  
