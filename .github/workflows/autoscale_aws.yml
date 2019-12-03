@@ -1,0 +1,39 @@
+name: autoscale_aws
+
+on:
+  push:
+    branches: 
+      - dev
+ 
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install pipenv
+      uses: dschep/install-pipenv-action@v1
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Black Code Formatter
+      uses: lgeiger/black-action@v1.0.1
+      with:
+        args: "--check"
+    - name: Pyflakes Syntax Checker
+      uses: lgeiger/pyflakes-action@v1.0.1
+#    - name: pypi-publish
+#      uses: pypa/gh-action-pypi-publish@v1.0.0a0
+#      with:
+        # PyPI user
+#        user: __token__
+        # Password for your PyPI user or an access token
+#        password: token_goes_here
+        # The repository URL to use
+#        repository_url: "https://github.com/arita37/autoscale_aws/tree/dev"
