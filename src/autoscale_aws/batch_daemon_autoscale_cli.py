@@ -15,6 +15,8 @@ batch_daemon_autoscale_cli.py  --mode daemon  --reset_global_task_file 1  --para
 
 
 
+
+
 #### Prod setup of task files
 batch_daemon_autoscale_cli.py  --mode daemon  --reset_global_task_file 1 --param_file zs3drive/config_batch.toml  --param_mode prod
 
