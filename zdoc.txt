@@ -29,6 +29,17 @@ batch_daemon_monitor_cli.py
 
 
 
+###### Actions
+reconfigured with flake8 and see similar errors. It appears there are ways to exclude checks in flake8 
+
+ https://github.com/arita37/autoscale_aws/commit/f19d66fcdcb8f0f74d68918f3dcfe156d5e87551/checks?check_suite_id=341668312, and adjust the arguments to flake8 accordingly. 
+ 
+ This can be used as a reference: http://flake8.pycqa.org/en/latest/user/options.html
+
+This is the run for cli_code repo: https://github.com/arita37/cli_code/commit/0dcd5286506660a21692e107efc088137a39a323/checks?check_suite_id=341688268. 
+
+
+
 
 
 
