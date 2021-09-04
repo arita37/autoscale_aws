@@ -24,7 +24,7 @@ A minimal task is defined by :
    }
    
 
-  A task can contains this file :
+  Daemon will generate  this file :
      status.json   :  { 'status' :  "nostarted/running/sucess/unknown",   'dt': "",
                       'start_dt': unixtime
                       'end_dt' : unixtime
@@ -38,7 +38,7 @@ A minimal task is defined by :
 
 
 4) Launch the daemon with the S3
-  batch_autoscale_daemon  --dir_task   /mys3folder/path/   --n_parallel_task
+  batch_autoscale_daemon  --dir_task   /mys3folder/path/   --n_parallel_task  5    ## 5 tasks are running in parallel
   
   
 5) daemon will pick the tasks
