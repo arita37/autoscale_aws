@@ -20,12 +20,14 @@ A minimal task is defined by :
       'n_cpu' : 5,
       'ram'   : 4096
       'start_dt': Time to start :  '15:00'
-   
    }
    
 
   Daemon will generate  this file :
-     status.json   :  { 'status' :  "nostarted/running/sucess/unknown",   'dt': "",
+     mytask01_SUFFIX      SUFFIX=  _qstart     _qdone    _qignore     for started task, done task and ignore task.
+  
+  
+     mytask01/status.json   :  { 'status' :  "nostarted/running/sucess/unknown",   'dt': "",
                       'start_dt': unixtime
                       'end_dt' : unixtime
      }
