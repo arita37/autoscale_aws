@@ -1544,6 +1544,10 @@ def aws_lambda_start(arn, payload):
     Starts lambda
      :arn: lambda arn to be started. Format 'arn:aws:lambda:<region>:xxxxxxxxxxxx:function:function_name'
      :payload: input in json format to invoke the lambda
+
+    TODO:
+     - Build config using already data contained in AWS
+     - Add testing
     """
     config = botocore.config.Config(read_timeout=320, connect_timeout=320, retries={'max_attempts': 0})
     # TODO: config should probably be fetched from AWS()
