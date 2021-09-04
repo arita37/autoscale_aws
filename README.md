@@ -4,20 +4,49 @@
 
 
 
- ```
- To publish
-cd repo
-python pypi.py  pblish
 
-
- ```
-
-
+## Usage
 ```
-Create a folder of tasks.
+1) Create a folder of tasks in a S3 folder
    /tasks/mytask01/
    /tasks/mytask02/
    /tasks/mytask03/
+
+A minimal task is defined by :
+   main.sh   : bash script
+   config.json  : json to config the task.
+   
+   config.json : {
+      'n_cpu' : 5,
+      'ram'   : 4096
+      'start_dt': Time to start :  '15:00'
+   
+   }
+   
+
+  A task can contains this file :
+     status.json   :  { 'status' :  "nostarted/running/sucess/unknown",   'dt': "",
+                      'start_dt': unixtime
+                      'end_dt' : unixtime
+     }
+
+
+2) Launch a micro-instance EC2 
+
+
+3) pip install autoscale_aws
+
+
+4) Launch the daemon with the S3
+  batch_autoscale_daemon  --dir_task   /mys3folder/path/   --n_parallel_task
+  
+  
+5) daemon will pick the tasks
+    and check if it should start or not.
+
+
+
+
 
 
 Autoscale will pick up those ones, launch AWS instances,
