@@ -146,8 +146,7 @@ from boto import ec2
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 from boto.s3.connection import S3Connection
-import boto3
-import botocore
+from boto.awslambda.layer1 import AWSLambdaConnection
 
 from tqdm import tqdm
 import paramiko
@@ -1539,7 +1538,7 @@ def aws_ec2_getfolder(remotepath, sftp):
             #sftp.get(remote, local) line for dowloading.
             sftp.get(os.path.join(os.path.join(path, file1)), '/local/path/')
 
-def aws_lambda_start(arn, payload):
+def aws_lambda_run(region=None):
     """
     Starts lambda
      :arn: lambda arn to be started. Format 'arn:aws:lambda:<region>:xxxxxxxxxxxx:function:function_name'
@@ -1549,18 +1548,25 @@ def aws_lambda_start(arn, payload):
      - Build config using already data contained in AWS
      - Add testing
     """
-    config = botocore.config.Config(read_timeout=320, connect_timeout=320, retries={'max_attempts': 0})
-    # TODO: config should probably be fetched from AWS()
-    client = boto3.client('lambda', config=config)
+    aws = AWS()
+    aws_access, aws_secret = aws.aws_accesskey_get()
+    aws_region = region | aws.v['AWS_REGION']
+    lambda_conn = boto.aws_lambda.connect_to_region(aws_region, aws_access_key_id=aws_access, aws_secret_access_key=aws_secret)
+    lambda_conn.invoke_async(function_name, invoke_args)
 
-    payload = {"body": 'some_string'}
-    payload = json.dumps(payload)
 
-    client.invoke(
-        FunctionName=arn,
-        InvocationType='RequestResponse',
-        Payload=payload
-    )
+    # config = botocore.config.Config(read_timeout=320, connect_timeout=320, retries={'max_attempts': 0})
+    # # TODO: config should probably be fetched from AWS()
+    # client = boto3.client('lambda', config=config)
+
+    # payload = {"body": 'some_string'}
+    # payload = json.dumps(payload)
+
+    # client.invoke(
+    #     FunctionName=arn,
+    #     InvocationType='RequestResponse',
+    #     Payload=payload
+    # )
 
 
 ############################ UTILS ################################################################
