@@ -1540,19 +1540,30 @@ def aws_ec2_getfolder(remotepath, sftp):
 
 def aws_lambda_run(region=None):
     """
-    Starts lambda
-     :arn: lambda arn to be started. Format 'arn:aws:lambda:<region>:xxxxxxxxxxxx:function:function_name'
-     :payload: input in json format to invoke the lambda
-
-    TODO:
-     - Build config using already data contained in AWS
-     - Add testing
+    
     """
     aws = AWS()
     aws_access, aws_secret = aws.aws_accesskey_get()
     aws_region = region | aws.v['AWS_REGION']
     lambda_conn = boto.aws_lambda.connect_to_region(aws_region, aws_access_key_id=aws_access, aws_secret_access_key=aws_secret)
+    
+
+    function_name = f'lambda_from_util_aws'
+    # Create lambda
+    zip = open('src/autoscale_aws/aws/lambda.zip', 'rb')
+    # nodejs'|'nodejs4.3'|'nodejs6.10'|'nodejs8.10'|'nodejs10.x'|'nodejs12.x'|'nodejs14.x'|'java8'|'java8.al2'|'java11'|'python2.7'|'python3.6'|'python3.7'|'python3.8'|'python3.9'|'dotnetcore1.0'|'dotnetcore2.0'|'dotnetcore2.1'|'dotnetcore3.1'|'nodejs4.3-edge'|'go1.x'|'ruby2.5'|'ruby2.7'|'provided'|'provided.al2'
+    runtime = 'python3.9'
+    role = 'arn:aws:iam::495134704719:role/lambda_from_util_aws'
+    handler = 'lambda.lambda_handler'
+    mode = 'event'
+    lambda_conn.upload_function(function_name, zip, runtime, role, handler, mode)
+
+    # Invoke lambda
+    invoke_args = {}
     lambda_conn.invoke_async(function_name, invoke_args)
+
+    # Remove lambda
+    lambda_conn.delete_function(function_name)
 
 
     # config = botocore.config.Config(read_timeout=320, connect_timeout=320, retries={'max_attempts': 0})
