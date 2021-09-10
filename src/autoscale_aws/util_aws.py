@@ -1540,20 +1540,23 @@ def aws_ec2_getfolder(remotepath, sftp):
 
 def aws_lambda_run():
     """
-    
+    Runs paython project into a lambda. Lambda is spined up from scratch, run
+    the project located into src/autoscale_aws/aws/lambda, and then remove the
+    created lambda    
     """
-    # aws = AWS()
-    # aws_access, aws_secret = aws.aws_accesskey_get()
-    # aws_region = region | aws.v['AWS_REGION']
+
+    # Fetch AWS credentials
+    aws = AWS()
+    aws_access, aws_secret = aws.aws_accesskey_get()
+    aws_region = aws.v['AWS_REGION']
+
+    # Fetch region info
     regions = boto.awslambda.regions()
-    region = 'us-east-2'
 
     for r in regions:
-        if r.name == region:
+        if r.name == aws_region:
             aws_region = r
 
-    aws_access = 'AKIAXGSCUARHVL7HCLVO'
-    aws_secret = '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'
     lambda_conn = AWSLambdaConnection(
         aws_access_key_id=aws_access,
         aws_secret_access_key=aws_secret,
@@ -1563,7 +1566,7 @@ def aws_lambda_run():
     function_name = f'lambda_from_util_aws'
     # Create lambda
     zip = open('src/autoscale_aws/aws/lambda.zip', 'rb')
-    # nodejs'|'nodejs4.3'|'nodejs6.10'|'nodejs8.10'|'nodejs10.x'|'nodejs12.x'|'nodejs14.x'|'java8'|'java8.al2'|'java11'|'python2.7'|'python3.6'|'python3.7'|'python3.8'|'python3.9'|'dotnetcore1.0'|'dotnetcore2.0'|'dotnetcore2.1'|'dotnetcore3.1'|'nodejs4.3-edge'|'go1.x'|'ruby2.5'|'ruby2.7'|'provided'|'provided.al2'
+    # runtime options: nodejs'|'nodejs4.3'|'nodejs6.10'|'nodejs8.10'|'nodejs10.x'|'nodejs12.x'|'nodejs14.x'|'java8'|'java8.al2'|'java11'|'python2.7'|'python3.6'|'python3.7'|'python3.8'|'python3.9'|'dotnetcore1.0'|'dotnetcore2.0'|'dotnetcore2.1'|'dotnetcore3.1'|'nodejs4.3-edge'|'go1.x'|'ruby2.5'|'ruby2.7'|'provided'|'provided.al2'
     runtime = 'python3.9'
     role = 'arn:aws:iam::495134704719:role/lambda_from_util_aws'
     handler = 'main.lambda_handler'

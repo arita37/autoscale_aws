@@ -1,10 +1,14 @@
-from util_aws import aws_lambda_run
-
+import os
 import shutil
 
+from util_aws import aws_lambda_run
+
+
 def batch_lambda_run():
-    shutil.make_archive('src/autoscale_aws/aws/lambda', 'zip', 'src/autoscale_aws/aws/lambda')
+    folder = 'src/autoscale_aws/aws'
+    lambda_folder = f'{folder}/lambda'
+    shutil.make_archive(lambda_folder, 'zip', lambda_folder)
     aws_lambda_run()
-    # TODO: Remove zip file
+    os.remove(f'{folder}/lambda.zip')
 
 batch_lambda_run()
