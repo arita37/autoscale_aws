@@ -146,6 +146,7 @@ from boto import ec2
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 from boto.s3.connection import S3Connection
+from boto.awslambda.layer1 import AWSLambdaConnection
 
 from tqdm import tqdm
 import paramiko
@@ -1536,6 +1537,47 @@ def aws_ec2_getfolder(remotepath, sftp):
         for file1 in files:
             #sftp.get(remote, local) line for dowloading.
             sftp.get(os.path.join(os.path.join(path, file1)), '/local/path/')
+
+def aws_lambda_run():
+    """
+    Runs paython project into a lambda. Lambda is spined up from scratch, run
+    the project located into src/autoscale_aws/aws/lambda, and then remove the
+    created lambda    
+    """
+
+    # Fetch AWS credentials
+    aws = AWS()
+    aws_access, aws_secret = aws.aws_accesskey_get()
+    aws_region = aws.v['AWS_REGION']
+
+    # Fetch region info
+    regions = boto.awslambda.regions()
+
+    for r in regions:
+        if r.name == aws_region:
+            aws_region = r
+
+    lambda_conn = AWSLambdaConnection(
+        aws_access_key_id=aws_access,
+        aws_secret_access_key=aws_secret,
+        region= aws_region)
+    
+
+    function_name = f'lambda_from_util_aws'
+    # Create lambda
+    zip = open('src/autoscale_aws/aws/lambda.zip', 'rb')
+    # runtime options: nodejs'|'nodejs4.3'|'nodejs6.10'|'nodejs8.10'|'nodejs10.x'|'nodejs12.x'|'nodejs14.x'|'java8'|'java8.al2'|'java11'|'python2.7'|'python3.6'|'python3.7'|'python3.8'|'python3.9'|'dotnetcore1.0'|'dotnetcore2.0'|'dotnetcore2.1'|'dotnetcore3.1'|'nodejs4.3-edge'|'go1.x'|'ruby2.5'|'ruby2.7'|'provided'|'provided.al2'
+    runtime = 'python3.9'
+    role = 'arn:aws:iam::495134704719:role/lambda_from_util_aws'
+    handler = 'main.lambda_handler'
+    mode = 'event'
+    lambda_conn.upload_function(function_name, zip, runtime, role, handler, mode)
+
+    # Invoke lambda
+    lambda_conn.invoke_async(function_name, '{}')
+
+    # Remove lambda
+    lambda_conn.delete_function(function_name)
 
 
 ############################ UTILS ################################################################
