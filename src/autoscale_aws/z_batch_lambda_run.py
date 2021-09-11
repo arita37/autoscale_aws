@@ -10,3 +10,6 @@ def batch_lambda_run():
     shutil.make_archive(lambda_folder, 'zip', lambda_folder)
     aws_lambda_run()
     os.remove(f'{folder}/lambda.zip')
+
+
+

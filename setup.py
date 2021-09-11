@@ -28,7 +28,9 @@ packages = find_packages(where="src", exclude=[])
 
 
 entry_points = {
- 'console_scripts': [  'aws_start=autoscale_aws.batch_daemon_autoscale_cli:autoscale_main'
+ 'console_scripts': [  'aws_run=autoscale_aws.cli:run_cli'
+
+
   ]
 }
 
