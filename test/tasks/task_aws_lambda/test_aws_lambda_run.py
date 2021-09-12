@@ -1,7 +1,6 @@
 import pytest
 from moto import mock_lambda
 from src.autoscale_aws.util_aws import aws_lambda_run
-from unittest.mock import MagicMock
 
 @pytest.fixture
 def mock_AWS(mocker):
