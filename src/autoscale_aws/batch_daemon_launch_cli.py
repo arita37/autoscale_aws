@@ -19,18 +19,12 @@ batch_daemon_launch_cli.py --param_file zs3drive/config_batch.toml --param_mode 
 cp zs3drive/tasks/ztask_test1_ignore   zs3drive/tasks/task_test1 --recursive
 rm zs3drive/tasks/ztask_test1_ignore  --recursive
 """
-import argparse
-import json
-import logging
-import os
-import subprocess
-import sys
-import time
+import argparse,json, logging, os, subprocess, sys, time
 from time import sleep
 
 ################################################################################
-from aapackage import util_log
-from aapackage.batch import util_batch, util_cpu
+from autoscale_aws import util_log
+from autoscale_aws import util_batch, util_cpu
 
 ############### logger #########################################################
 # DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -46,12 +40,13 @@ logger = logging.basicConfig()
 def log(*argv):
     logger.info(",".join([str(x) for x in argv]))
 
-
+    
+    
 ################################################################################
 def load_arguments():
     """
        --param_file /zs3drive/config_batch.toml --param_mode test_launch
-  """
+    """
     cur_path = os.path.dirname(os.path.realpath(__file__))
     config_file = os.path.join(cur_path, "config.toml")
 
@@ -63,10 +58,9 @@ def load_arguments():
     p.add_argument("--log_file", help=".")  # default="logfile_batchdaemon.log"
     p.add_argument("--log_file_task", help=".")  #     default="logfile_batchdaemon_task.log",
     p.add_argument("--mode", help="daemon/ .")  #     default="nodaemon",
+    
     p.add_argument("--waitsec", type=int, help="wait sec")  #  default=30,
-    p.add_argument(
-        "--global_task_file", help="synchronize task"
-    )  # default="/home/ubuntu/zs3drive/global_task.json",
+    p.add_argument( "--global_task_file", help="synchronize task" )  # default="/home/ubuntu/zs3drive/global_task.json",
 
     args = p.parse_args()
 
@@ -96,6 +90,55 @@ def load_arguments():
         return args
 
 
+      
+  
+def main():
+    """ Driver utility for the script."""
+    global logger
+    args = load_arguments()
+    logger = util_log.logger_setup(
+        __name__, log_file=args.log_file, formatter=util_log.FORMATTER_4, isrotate=True
+    )
+
+    log("Daemon", "start ", os.getpid())
+    while True:
+        log("Daemon new loop", args.task_folder)
+        folders = get_list_valid_task_folder(args.task_folder)
+
+        if folders:
+            log("task folder:", folders)
+            pid_list = util_batch.batch_run_infolder(task_folders=folders, log_file=args.log_file)
+            log("task folder started:", pid_list)
+
+        if args.mode != "daemon":
+            log("Daemon", "terminated", os.getpid())
+            break
+
+        sleep(args.waitsec)
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 ################################################################################
 ################################################################################
 def get_list_valid_task_folder(folder, script_name="main"):
@@ -237,30 +280,6 @@ class global_task(object):
       pass
 """
 
-
-def main():
-    """ Driver utility for the script."""
-    global logger
-    args = load_arguments()
-    logger = util_log.logger_setup(
-        __name__, log_file=args.log_file, formatter=util_log.FORMATTER_4, isrotate=True
-    )
-
-    log("Daemon", "start ", os.getpid())
-    while True:
-        log("Daemon new loop", args.task_folder)
-        folders = get_list_valid_task_folder(args.task_folder)
-
-        if folders:
-            log("task folder:", folders)
-            pid_list = util_batch.batch_run_infolder(task_folders=folders, log_file=args.log_file)
-            log("task folder started:", pid_list)
-
-        if args.mode != "daemon":
-            log("Daemon", "terminated", os.getpid())
-            break
-
-        sleep(args.waitsec)
 
 
 def main2():
