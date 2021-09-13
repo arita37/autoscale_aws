@@ -77,9 +77,7 @@ MAIN_INSTANCE_IP = [get_host_public_ipaddress()]
 
 
 ################################################################################
-
 logger = None
-
 
 def log(*argv):
     if logger:
@@ -94,6 +92,168 @@ ISTEST = True  ### For test the code
 INSTANCE_DICT = {
     "id": {"id": "", "cpu": 0, "ip_address": "", "ram": 0, "cpu_usage": 0, "ram_usage": 0}
 }
+
+
+
+
+
+################################################################################
+def load_arguments():
+    """
+     Load CLI input, load config.toml , overwrite config.toml by CLI Input
+    """
+    homepath    = os.environ["HOME"] if "HOME" in os.environ else "/home/ubuntu"
+    cur_path    = '%s/.aws/' % homepath
+    config_file = os.path.join(cur_path, "config.toml")
+
+    p = argparse.ArgumentParser()
+    p.add_argument("--prod", action='store_true', default=False, help="Prod/Test")
+    p.add_argument("--param_file", default=config_file, help="Params File")
+    p.add_argument("--param_mode", default="test", help=" test/ prod /uat")
+    p.add_argument("--mode", default="nodaemon", help="daemon/ .")  # default="nodaemon",
+    p.add_argument("--log_file", help=".")  # default="batchdaemon_autoscale.log",
+    
+    p.add_argument("--global_task_file", help="global task file")  #  default=global_task_file_default,
+    p.add_argument("--task_folder", help="path to task folder.")  # default=TASK_FOLDER_DEFAULT,
+    p.add_argument("--reset_global_task_file", help="global task file Reset File")
+    
+    p.add_argument("--task_repourl", help="repo for task")  # default="https://github.com/arita37/tasks.git"
+    p.add_argument("--task_reponame", help="repo for task")  # default="tasks",
+    p.add_argument("--task_repobranch", help="repo for task")  #  default="dev",
+    
+    p.add_argument("--ami", help="AMI used for spot")  #  default=amiId,
+    p.add_argument("--instance", help="Type of soot instance")  # default=default_instance_type,
+    p.add_argument("--spotprice", type=float, help="Actual price offered by us.")
+    p.add_argument("--waitsec", type=int, help="wait sec")
+    p.add_argument("--max_instance", type=int, help="")
+    p.add_argument("--max_cpu", type=int, help="")
+    arg = p.parse_args()
+    # Load file params as dict namespace
+
+    class to_namespace(object):
+        def __init__(self, adict):
+            self.__dict__.update(adict)
+
+    if not exists_file(arg.param_file):
+        print('Config file: %s does not exist, exiting...' % arg.param_file)
+        sys.exit(1)
+    print('Using config file: %s' % arg.param_file)
+    if not exists_dir(arg.task_folder):
+        # try and catch block for errors and bail out
+        os.makedirs(arg.task_folder)
+    print('Using task folder: %s' % arg.task_folder)
+
+    pars = toml.load(arg.param_file)
+
+    # print(arg.param_file, pars)
+    pars = pars[arg.param_mode]  # test / prod
+    # print(arg.param_file, pars)
+
+    ### Overwrite params by CLI input and merge with toml file
+    for key, x in vars(arg).items():
+        if x is not None:  # only values NOT set by CLI
+            pars[key] = x
+
+    # print(pars)
+    pars = to_namespace(pars)  #  like object/namespace pars.instance
+    return pars
+
+
+###################################################################################
+def autoscale_main():
+    ### Variable initialization #####################################################
+    arg = load_arguments()
+    # ISTEST = not arg.prod
+    if not exists_dir(os.path.dirname(arg.log_file)):
+        # try and catch block for errors and bail out
+        os.makedirs(os.path.dirname(arg.log_file))
+    logger = logger_setup(__name__, log_file=arg.log_file, formatter=util_log.FORMATTER_4,  isrotate=True)
+
+    # print("arg input", arg)
+    log( MAIN_INSTANCE_TO_PROTECT,  MAIN_INSTANCE_IP)
+    key_file = ec2_keypair_get(arg.keypair)
+    
+    global_task_file = arg.global_task_file
+    if arg.reset_global_task_file:
+        task_globalfile_reset(global_task_file)
+    log("Daemon", "start: ", os.getpid(), global_task_file)
+    ii = 0
+    while True:
+        log("Daemon", "tasks folder: ", arg.task_folder)
+        # Retrieve tasks from github  ##############################################
+        if ii % 5 == 0:
+            task_new, task_added = task_get_from_github(repourl=arg.task_repourl,
+                                                        reponame=arg.task_reponame,
+                                                        branch=arg.task_repobranch,
+                                                        to_task_folder=arg.task_s3_folder,
+                                                        tmp_folder=arg.task_local_folder,)
+            log("task", "new from github", task_added)
+        # Keep Global state of running instances
+        INSTANCE_DICT = ec2_instance_getallstate(arg.instance, key_file)
+
+        ### Start instance by rules ###############################################
+        start_instance = instance_start_rule(arg.task_folder, global_task_file)
+        log("Instances to start", start_instance)
+        if start_instance:
+            # When instance start, batchdaemon will start and picks up task in  COMMON DRIVE /zs3drive/
+            instance_list = ec2_spot_start(arg.ami, start_instance["type"], start_instance["spotprice"],
+                                           arg.region, arg.spot_cfg_file, arg.keypair)
+            log("Instances started", instance_list)
+
+            INSTANCE_DICT = ec2_instance_getallstate(arg.instance, key_file)
+            log("Instances running", INSTANCE_DICT)
+
+            ##### Launch Batch system by No Blocking SSH  #########################
+            ec2_instance_initialize_ssh(arg, key_file)
+            sleep(10)
+
+        ### Stop instance by rules ################################################
+        stop_instances = instance_stop_rule(arg.task_folder, arg.global_task_file, arg.instance, key_file)
+        log("Instances to be stopped", stop_instances)
+        if stop_instances:
+            stop_instances_list = [v["id"] for v in stop_instances]
+            ec2_instance_backup(
+                stop_instances_list,
+                folder_list   = arg.folder_to_backup,  # ["/home/ubuntu/zlog/", "/home/ubuntu/tasks_out/" ],
+                folder_backup = arg.backup_s3_folder,
+            )  # "/home/ubuntu/zs3drive/backup/"
+
+            ec2_instance_stop(stop_instances_list)
+            log("Stopped instances", stop_instances_list)
+
+            
+            
+        ### Upload results to github ##############################################
+        ii = ii + 1
+        if ii % 10 == 0:  # 10 mins Freq
+            task_new, task_added = task_put_to_github(
+                repourl=arg.taskout_repourl,  # "https://github.com/arita37/tasks_out.git"
+                branch=arg.taskout_repobranch,  # "tasks_out", branch="dev",
+                from_taskout_folder=arg.taskout_s3_folder,  # "/home/ubuntu/zs3drive/tasks_out/"
+                repo_folder=arg.taskout_local_folder,
+            )  # "/home/ubuntu/data/github_tasks_out/"
+            log("task", "Add results to github", task_added)
+
+        ### No Daemon mode  ######################################################
+        if arg.mode != "daemon":
+            log("Daemon", "No Daemon mode", "terminated daemon")
+            break
+
+        sleep(arg.waitsec)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -660,66 +820,6 @@ def task_globalfile_reset(global_task_file=None):
             json.dump({}, f)
 
 
-################################################################################
-def load_arguments():
-    """
-     Load CLI input, load config.toml , overwrite config.toml by CLI Input
-    """
-    homepath = os.environ["HOME"] if "HOME" in os.environ else "/home/ubuntu"
-    cur_path = '%s/.aws/' % homepath
-    config_file = os.path.join(cur_path, "config.toml")
-
-    p = argparse.ArgumentParser()
-    p.add_argument("--prod", action='store_true', default=False, help="Prod/Test")
-    p.add_argument("--param_file", default=config_file, help="Params File")
-    p.add_argument("--param_mode", default="test", help=" test/ prod /uat")
-    p.add_argument("--mode", default="nodaemon", help="daemon/ .")  # default="nodaemon",
-    p.add_argument("--log_file", help=".")  # default="batchdaemon_autoscale.log",
-    
-    p.add_argument("--global_task_file", help="global task file")  #  default=global_task_file_default,
-    p.add_argument("--task_folder", help="path to task folder.")  # default=TASK_FOLDER_DEFAULT,
-    p.add_argument("--reset_global_task_file", help="global task file Reset File")
-    
-    p.add_argument("--task_repourl", help="repo for task")  # default="https://github.com/arita37/tasks.git"
-    p.add_argument("--task_reponame", help="repo for task")  # default="tasks",
-    p.add_argument("--task_repobranch", help="repo for task")  #  default="dev",
-    
-    p.add_argument("--ami", help="AMI used for spot")  #  default=amiId,
-    p.add_argument("--instance", help="Type of soot instance")  # default=default_instance_type,
-    p.add_argument("--spotprice", type=float, help="Actual price offered by us.")
-    p.add_argument("--waitsec", type=int, help="wait sec")
-    p.add_argument("--max_instance", type=int, help="")
-    p.add_argument("--max_cpu", type=int, help="")
-    arg = p.parse_args()
-    # Load file params as dict namespace
-
-    class to_namespace(object):
-        def __init__(self, adict):
-            self.__dict__.update(adict)
-
-    if not exists_file(arg.param_file):
-        print('Config file: %s does not exist, exiting...' % arg.param_file)
-        sys.exit(1)
-    print('Using config file: %s' % arg.param_file)
-    if not exists_dir(arg.task_folder):
-        # try and catch block for errors and bail out
-        os.makedirs(arg.task_folder)
-    print('Using task folder: %s' % arg.task_folder)
-
-    pars = toml.load(arg.param_file)
-
-    # print(arg.param_file, pars)
-    pars = pars[arg.param_mode]  # test / prod
-    # print(arg.param_file, pars)
-
-    ### Overwrite params by CLI input and merge with toml file
-    for key, x in vars(arg).items():
-        if x is not None:  # only values NOT set by CLI
-            pars[key] = x
-
-    # print(pars)
-    pars = to_namespace(pars)  #  like object/namespace pars.instance
-    return pars
 
 
 def ps_check_process(name) :
@@ -727,85 +827,6 @@ def ps_check_process(name) :
     return True
 
 
-###################################################################################
-def autoscale_main():
-    ### Variable initialization #####################################################
-    arg = load_arguments()
-    # ISTEST = not arg.prod
-    if not exists_dir(os.path.dirname(arg.log_file)):
-        # try and catch block for errors and bail out
-        os.makedirs(os.path.dirname(arg.log_file))
-    logger = logger_setup(__name__, log_file=arg.log_file, formatter=util_log.FORMATTER_4,
-                          isrotate=True)
-    # print("arg input", arg)
-    log( MAIN_INSTANCE_TO_PROTECT,  MAIN_INSTANCE_IP)
-    key_file = ec2_keypair_get(arg.keypair)
-    
-    global_task_file = arg.global_task_file
-    if arg.reset_global_task_file:
-        task_globalfile_reset(global_task_file)
-    log("Daemon", "start: ", os.getpid(), global_task_file)
-    ii = 0
-    while True:
-        log("Daemon", "tasks folder: ", arg.task_folder)
-        # Retrieve tasks from github  ##############################################
-        if ii % 5 == 0:
-            task_new, task_added = task_get_from_github(repourl=arg.task_repourl,
-                                                        reponame=arg.task_reponame,
-                                                        branch=arg.task_repobranch,
-                                                        to_task_folder=arg.task_s3_folder,
-                                                        tmp_folder=arg.task_local_folder,)
-            log("task", "new from github", task_added)
-        # Keep Global state of running instances
-        INSTANCE_DICT = ec2_instance_getallstate(arg.instance, key_file)
-
-        ### Start instance by rules ###############################################
-        start_instance = instance_start_rule(arg.task_folder, global_task_file)
-        log("Instances to start", start_instance)
-        if start_instance:
-            # When instance start, batchdaemon will start and picks up task in  COMMON DRIVE /zs3drive/
-            instance_list = ec2_spot_start(arg.ami, start_instance["type"], start_instance["spotprice"],
-                                           arg.region, arg.spot_cfg_file, arg.keypair)
-            log("Instances started", instance_list)
-
-            INSTANCE_DICT = ec2_instance_getallstate(arg.instance, key_file)
-            log("Instances running", INSTANCE_DICT)
-
-            ##### Launch Batch system by No Blocking SSH  #########################
-            ec2_instance_initialize_ssh(arg, key_file)
-            sleep(10)
-
-        ### Stop instance by rules ################################################
-        stop_instances = instance_stop_rule(arg.task_folder, arg.global_task_file, arg.instance, key_file)
-        log("Instances to be stopped", stop_instances)
-        if stop_instances:
-            stop_instances_list = [v["id"] for v in stop_instances]
-            ec2_instance_backup(
-                stop_instances_list,
-                folder_list=arg.folder_to_backup,  # ["/home/ubuntu/zlog/", "/home/ubuntu/tasks_out/" ],
-                folder_backup=arg.backup_s3_folder,
-            )  # "/home/ubuntu/zs3drive/backup/"
-
-            ec2_instance_stop(stop_instances_list)
-            log("Stopped instances", stop_instances_list)
-
-        ### Upload results to github ##############################################
-        ii = ii + 1
-        if ii % 10 == 0:  # 10 mins Freq
-            task_new, task_added = task_put_to_github(
-                repourl=arg.taskout_repourl,  # "https://github.com/arita37/tasks_out.git"
-                branch=arg.taskout_repobranch,  # "tasks_out", branch="dev",
-                from_taskout_folder=arg.taskout_s3_folder,  # "/home/ubuntu/zs3drive/tasks_out/"
-                repo_folder=arg.taskout_local_folder,
-            )  # "/home/ubuntu/data/github_tasks_out/"
-            log("task", "Add results to github", task_added)
-
-        ### No Daemon mode  ######################################################
-        if arg.mode != "daemon":
-            log("Daemon", "No Daemon mode", "terminated daemon")
-            break
-
-        sleep(arg.waitsec)
 
 
 ###################################################################################
