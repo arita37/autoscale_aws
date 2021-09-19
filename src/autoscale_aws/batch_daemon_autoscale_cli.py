@@ -385,6 +385,7 @@ def ec2_instance_getallstate(instance_type='t3.small', key_file=None):
 # Keypair read from config.toml be read for this?
 def ec2_keypair_get(keypair):
     identity = "%s/.ssh/%s" % (
+        # Question: "HOME" condition shouldn't in lowercase, or non case sensitive?
         os.environ["HOME"] if "HOME" in os.environ else "/home/ubuntu",
         keypair,
     )
@@ -729,6 +730,20 @@ def ps_check_process(name) :
 
 ###################################################################################
 def autoscale_main():
+    '''
+    Args:
+        keypar: ssh file name, which should exist in local machine
+        global_task_file:
+        reset_global_task_file (optional): indicats if empty global_task_file
+
+        task_repourl (optional): GH repository user url
+        task_reponame (optional): GH repository name. By defauld: task
+        task_repobranch (optional):  GH repository branch. By default: dev
+        task_s3_folder (optional): Local machine folder where tasks will be saved. By default: /home/ubuntu/zs3drive/tasks/
+        task_local_folder (optional): Local machine folder where GH repository will be cloned. By default: /home/ubuntu/data/ztmp/
+
+        task_folder:
+    '''
     ### Variable initialization #####################################################
     arg = load_arguments()
     # ISTEST = not arg.prod
@@ -743,6 +758,7 @@ def autoscale_main():
     
     global_task_file = arg.global_task_file
     if arg.reset_global_task_file:
+        # Empty global_task_file
         task_globalfile_reset(global_task_file)
     log("Daemon", "start: ", os.getpid(), global_task_file)
     ii = 0
@@ -750,6 +766,7 @@ def autoscale_main():
         log("Daemon", "tasks folder: ", arg.task_folder)
         # Retrieve tasks from github  ##############################################
         if ii % 5 == 0:
+            # Store in local machine tasks from github
             task_new, task_added = task_get_from_github(repourl=arg.task_repourl,
                                                         reponame=arg.task_reponame,
                                                         branch=arg.task_repobranch,
