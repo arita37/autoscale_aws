@@ -743,6 +743,15 @@ def autoscale_main():
         task_local_folder (optional): Local machine folder where GH repository will be cloned. By default: /home/ubuntu/data/ztmp/
 
         task_folder:
+
+
+        TODO: Code reading and understanding is quite challenging due to different reasons:
+        - All code lives on the same file
+        - Code is not modular. It doesnt follow OOP model what makes hard to follow. It would be much nicer if we would have
+        classes like Github, EC2, helpers, etc.
+        - There are many concepts like daemon, many args what need to be understood before running / modifying the code
+        - Productionise the code in general. There is commented code, etc.
+        
     '''
     ### Variable initialization #####################################################
     arg = load_arguments()
