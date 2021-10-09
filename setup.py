@@ -29,7 +29,7 @@ LONG_DESCRIPTION = """
 # from m2r import convert
 # rst = convert('# Title\n\nSentence.')
 
-with open("readme.md", mode="r", encoding='utf-8') as f :
+with open("README.md", mode="r", encoding='utf-8') as f :
    md = " ".join(f.readlines())
    LONG_DESCRIPTION = md
    # convert(md)
