@@ -1,3 +1,5 @@
+import requests
+
 def lambda_handler(event, context):
-    print('Hello world')
-    return True
+    r = requests.get('https://boto3.amazonaws.com/')
+    return r.status_code

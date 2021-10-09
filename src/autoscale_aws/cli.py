@@ -13,7 +13,7 @@ python cli.py   batch_lambda  --path  src/autoscale_aws/aws
 
 """
 import argparse, os
-
+import shutil
 ###################################################
 
 
