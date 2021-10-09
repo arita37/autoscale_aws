@@ -10,14 +10,14 @@ on:
 # - main
 
     branches-ignore:
-      - main
+      - master
 
   pull_request:
     branches:
 # - main
 
     branches-ignore:
-      - main
+      - master
 
 jobs:
   build:
