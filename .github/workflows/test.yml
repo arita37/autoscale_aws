@@ -1,0 +1,93 @@
+name: Test only
+
+###  https://github.com/arita37/awesome-actions#static-analysis
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+# - main
+
+    branches-ignore:
+      - main
+
+  pull_request:
+    branches:
+# - main
+
+    branches-ignore:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+    #- uses: actions/checkout@v1
+    #  ref: ${{ github.head_ref }
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.head_ref }}
+        
+    - name: Set up Python 3.6.*
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6.*
+      
+    - name: Install pipenv
+      uses: dschep/install-pipenv-action@v1
+      
+  
+    - name: Cache pipenv virtualenv
+      id: cache-pipenv
+      uses: actions/cache@v1
+      with:
+        path: /opt/hostedtoolcache/Python/
+        key: ${{ runner.os }}-pipenv-${{ hashFiles('**py36.txt') }}
+
+    #- name: Install numpy
+    #  if: steps.cache-pipenv.outputs.cache-hit != 'true'
+    #  run: pip install numpy==1.18.2   pillow==6.2.1  scipy
+
+    - name: Install repo requirements  1
+      if: steps.cache-pipenv.outputs.cache-hit != 'true'
+      run: |
+           pip install -r  requirements.txt
+
+
+    - name: Install - Check
+      run:  |
+        python -c "import utilmy"
+
+
+    - name: Install package
+      run:  |
+        pip install -e .
+
+
+    - name: test_import
+      run: |
+           python -c "import os; print(os)"
+           python -c "import utilmy; print(utilmy)"
+
+
+    ################################################################
+    ########  Runs All test
+    - name: Setup
+      run: |
+          mkdir -p    /home/runner/work/log_tmp/
+          chmod -R 777 .
+
+
+    - name: test_v1
+      run:  |
+            python -c "import os"
+
+
+    ########  Commit
+    - name: log_gitcommit
+      run: |
+           ls .
+           
+

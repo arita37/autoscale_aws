@@ -1,9 +1,9 @@
-name: autoscale_aws
+name: zold
 
 on:
   push:
     branches: 
-      - dev
+      - dev12233
  
 jobs:
   build:

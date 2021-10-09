@@ -1577,7 +1577,7 @@ def aws_lambda_run(function_name = f'lambda_from_util_aws',
         region= aws_region)
     
     #### Create lambda 
-    if ".zip" not in dir_codesource_zip :
+    if not ".zip" in dir_codesource_zip :
        shutil.make_archive(lambda_folder, 'zip', lambda_folder)
 
     zip = open(dir_codesource_zip, 'rb')
