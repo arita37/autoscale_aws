@@ -2,6 +2,17 @@
  Autoscale AWS allows to scale up virtual machines by invoking spot requests as per
  start and stop rules.
 
+## Repo Index Docs
+    Control + Find  to get reference files
+    
+https://github.com/arita37/autoscale_aws/blob/master/docs/doc_index.py
+
+
+
+
+
+
+
 
 
 
